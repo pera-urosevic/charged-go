@@ -1,6 +1,12 @@
 package ui
 
-import "github.com/lxn/walk"
+import (
+	"charged/config"
+	"charged/state"
+	"fmt"
+
+	"github.com/lxn/walk"
+)
 
 var notifyIcon *walk.NotifyIcon
 
@@ -22,7 +28,29 @@ func createNotifyIcon(mw *walk.MainWindow) error {
 		return err
 	}
 
+	onLeftClick()
+
 	return nil
+}
+
+func onLeftClick() {
+	notifyIcon.MouseDown().Attach(func(x, y int, button walk.MouseButton) {
+		if button != walk.LeftButton {
+			return
+		}
+		alerts := false
+		statuses := ""
+		for _, device := range config.Devices {
+			level := state.Levels[device.Name]
+			alerts = alerts || state.Alerts[device.Name]
+			statuses += fmt.Sprintf("%s - %d%%\n", device.Name, level)
+		}
+		if alerts {
+			notifyIcon.ShowCustom("", statuses, iconStatusAlert)
+		} else {
+			notifyIcon.ShowCustom("", statuses, iconStatusGood)
+		}
+	})
 }
 
 func updateNotifyIcon(hasAlerts bool) {
